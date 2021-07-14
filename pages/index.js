@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import MainGrid from '../src/components/MainGrid';
 import Box from '../src/components/Box';
 import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet } from '../src/lib/AlurakutCommons';
@@ -22,6 +22,28 @@ function ProfileSidebar(propriedades) {
   )
 }
 
+function ProfileRelationsBox(propriedades) {
+  return (
+    <ProfileRelationsBoxWrapper>
+      <h2 className="smallTitle">
+        {propriedades.title} ({propriedades.items.length})
+      </h2>
+      <ul>
+        {/* {seguidores.map((itemAtual) => {
+          return (
+            <li key={itemAtual}>
+              <a href={`https://github.com/${itemAtual}.png`}>
+                <img src={itemAtual.image} />
+                <span>{itemAtual.title}</span>
+              </a>
+            </li>
+          )
+        })} */}
+      </ul>
+    </ProfileRelationsBoxWrapper>
+  )
+}
+
 export default function Home() {
   const user = 'alexnicolascode';
   const pessoasFavoritas = [
@@ -33,7 +55,19 @@ export default function Home() {
     'felipefialho',
   ]
 
-  const [comunidades, setComunidades] = useState([{
+  const [ seguidores, setSeguidores ] = useState([]);
+
+  useEffect(() => {
+    fetch('https://api.github.com/users/peas/followers')
+    .then(res => {
+      return res.json();
+    })
+    .then(res => {
+      setSeguidores(res);
+    })
+  }, [])
+
+  const [ comunidades, setComunidades ] = useState([{
     id: '1', 
     title: 'Eu odeio acordar cedo',
     image: 'https://alurakut.vercel.app/capa-comunidade-01.jpg'
@@ -77,6 +111,7 @@ export default function Home() {
                   type="text"
                   />
               </div>
+
               <div>
                 <input
                   placeholder="Coloque uma URL para usarmos de capa"
@@ -92,6 +127,8 @@ export default function Home() {
           </Box>
         </div>
         <div className="profileRelationsArea" style={{ gridArea: 'profileRelationsArea' }}>
+          <ProfileRelationsBox title="Seguidores" items={seguidores} />
+
           <ProfileRelationsBoxWrapper>
             <h2 className="smallTitle">
               Comunidades ({comunidades.length})
