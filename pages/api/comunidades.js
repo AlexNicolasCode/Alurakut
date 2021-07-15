@@ -6,7 +6,7 @@ export default async function recebedorDeRequests(req, res) {
         const client = new SiteClient(TOKEN);
         
         const registroCriado = await client.items.create({
-            itemType: process.env.NEXT_PUBLIC_TOKEN_COMMUNITY_MODEL, 
+            itemType: "967597", 
             ...req.body,
         })
     
