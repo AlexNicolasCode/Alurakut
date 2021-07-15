@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import MainGrid from '../src/components/MainGrid';
-import Box from '../src/components/Box';
+import { useState, useEffect } from 'react';
+import MainGrid from '../src/components/MainGrid'
+import Box from '../src/components/Box'
 import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet } from '../src/lib/AlurakutCommons';
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
 
@@ -46,6 +46,8 @@ function ProfileRelationsBox(propriedades) {
 
 export default function Home() {
   const user = 'alexnicolascode';
+  const [comunidades, setComunidades] = useState([]);
+
   const pessoasFavoritas = [
     'juunegreiros',
     'omariosouto',
@@ -54,24 +56,41 @@ export default function Home() {
     'marcobrunodev',
     'felipefialho',
   ]
+  const [seguidores, setSeguidores] = useState([]);
 
-  const [ seguidores, setSeguidores ] = useState([]);
-
-  useEffect(() => {
+  useEffect(function() {
+    // GET
     fetch('https://api.github.com/users/peas/followers')
-    .then(res => {
-      return res.json();
+    .then(function (respostaDoServidor) {
+      return respostaDoServidor.json();
     })
-    .then(res => {
-      setSeguidores(res);
+    .then(function(respostaCompleta) {
+      setSeguidores(respostaCompleta);
+    })
+
+    fetch('https://graphql.datocms.com/', {
+      method: 'POST',
+      headers: {
+        'Authorization': process.env.NEXT_PUBLIC_TOKEN_READY_ONLY,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ "query": `query {
+        allCommunities {
+          id 
+          title
+          imageUrl
+          creatorSlug
+        }
+      }` })
+    })
+    .then((response) => response.json())
+    .then((respostaCompleta) => {
+      const comunidadesVindasDoDato = respostaCompleta.data.allCommunities;
+      console.log(comunidadesVindasDoDato)
+      setComunidades(comunidadesVindasDoDato)
     })
   }, [])
-
-  const [ comunidades, setComunidades ] = useState([{
-    id: '1', 
-    title: 'Eu odeio acordar cedo',
-    image: 'https://alurakut.vercel.app/capa-comunidade-01.jpg'
-  }]);
 
   return (
     <>
@@ -80,6 +99,7 @@ export default function Home() {
         <div className="profileArea" style={{ gridArea: 'profileArea' }}>
           <ProfileSidebar githubUser={user} />
         </div>
+
         <div className="welcomeArea" style={{ gridArea: 'welcomeArea' }}>
           <Box>
             <h1 className="title">
@@ -94,14 +114,27 @@ export default function Home() {
             <form onSubmit={function handleCriaComunidade(e) {
                 e.preventDefault();
                 const dadosDoForm = new FormData(e.target);
-                
+
                 const comunidade = {
-                  id: new Date().toISOString(),
                   title: dadosDoForm.get('title'),
-                  image: dadosDoForm.get('image'),
+                  imageUrl: dadosDoForm.get('image'),
+                  creatorSlug: user,
                 }
-                const comunidadesAtualizadas = [...comunidades, comunidade];
-                setComunidades(comunidadesAtualizadas)
+
+                fetch('/api/comunidades', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(comunidade)
+                })
+                .then(async (response) => {
+                  const dados = await response.json();
+
+                  const comunidade = dados.registroCriado;
+                  const comunidadesAtualizadas = [...comunidades, comunidade];
+                  setComunidades(comunidadesAtualizadas)
+                })
             }}>
               <div>
                 <input
@@ -128,17 +161,17 @@ export default function Home() {
         </div>
         <div className="profileRelationsArea" style={{ gridArea: 'profileRelationsArea' }}>
           <ProfileRelationsBox title="Seguidores" items={seguidores} />
-
           <ProfileRelationsBoxWrapper>
             <h2 className="smallTitle">
               Comunidades ({comunidades.length})
             </h2>
+
             <ul>
               {comunidades.map((itemAtual) => {
                 return (
                   <li key={itemAtual.id}>
-                    <a href={`/users/${itemAtual.title}`}>
-                      <img src={itemAtual.image} />
+                    <a href={`/communities/${itemAtual.id}`}>
+                      <img src={itemAtual.imageUrl} />
                       <span>{itemAtual.title}</span>
                     </a>
                   </li>
@@ -146,10 +179,10 @@ export default function Home() {
               })}
             </ul>
           </ProfileRelationsBoxWrapper>
-
+          
           <ProfileRelationsBoxWrapper>
             <h2 className="smallTitle">
-              Pessoas da comunidade 
+              Pessoas da comunidade ({pessoasFavoritas.length})
             </h2>
 
             <ul>
